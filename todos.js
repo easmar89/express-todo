@@ -68,8 +68,6 @@ app.get('/lists', async (req, res) => {
   try {
     let store = res.locals.store;
     let todoLists = await store.sortedTodoLists();
-    console.log('todoLists is: ... ', todoLists);
-
     let todosInfo = todoLists.map((todoList) => ({
       countAllTodos: todoList.todos.length,
       countDoneTodos: todoList.todos.filter((todo) => todo.done).length,
@@ -131,19 +129,23 @@ app.post(
 );
 
 // Render individual todo list and its todos
-app.get('/lists/:todoListId', (req, res, next) => {
-  let todoListId = req.params.todoListId;
-  let todoList = res.locals.store.loadTodoList(+todoListId);
-  if (todoList === undefined) {
-    next(new Error('Not found.'));
-  } else {
-    todoList.todos = res.locals.store.sortedTodos(todoList);
+app.get('/lists/:todoListId', async (req, res, next) => {
+  try {
+    let todoListId = req.params.todoListId;
+    let todoList = await res.locals.store.loadTodoList(+todoListId);
+    if (todoList === undefined) {
+      next(new Error('Not found.'));
+    } else {
+      todoList.todos = await res.locals.store.sortedTodos(todoList);
 
-    res.render('list', {
-      todoList,
-      isDoneTodoList: res.locals.store.isDoneTodoList(todoList),
-      hasUndoneTodos: res.locals.store.hasUndoneTodos(todoList),
-    });
+      res.render('list', {
+        todoList,
+        isDoneTodoList: res.locals.store.isDoneTodoList(todoList),
+        hasUndoneTodos: res.locals.store.hasUndoneTodos(todoList),
+      });
+    }
+  } catch (error) {
+    next(error);
   }
 });
 
