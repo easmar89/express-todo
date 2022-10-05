@@ -44,6 +44,8 @@ app.use((req, res, next) => {
 
 // Extract session info
 app.use((req, res, next) => {
+  res.locals.username = req.session.username;
+  res.locals.signIn = req.session.signIn;
   res.locals.flash = req.session.flash;
   delete req.session.flash;
   next();
@@ -324,13 +326,30 @@ app.get(
   })
 );
 
-app.post(
-  '/users/signin',
-  catchError((req, res) => {
-    console.log('username: ', req.body.username);
-    console.log('password: ', req.body.password);
-  })
-);
+app.post('/users/signin', (req, res) => {
+  let username = req.body.username.trim();
+  let password = req.body.password;
+
+  if (username !== 'admin' || password !== 'secret') {
+    req.flash('error', 'Invalid credentials.');
+    res.render('signin', {
+      flash: req.flash(),
+      username: req.body.username,
+    });
+  } else {
+    req.session.username = username;
+    req.session.signedIn = true;
+    req.flash('info', 'Welcome!');
+    res.redirect('/lists');
+  }
+});
+
+// Handle Sign Out
+app.post('/users/signout', (req, res) => {
+  delete req.session.username;
+  delete req.session.signedIn;
+  res.redirect('/users/signin');
+});
 
 // Error handler
 app.use((err, req, res, _next) => {
